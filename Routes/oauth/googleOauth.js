@@ -128,6 +128,10 @@ router.post(
             )
             .then((submitedUser) => {
               resData.updateDetails = submitedUser;
+              resData.user = {
+                name: name,
+                email: email
+              }
               const payload = {
                 email: email,
                 googleToken: accessToken,

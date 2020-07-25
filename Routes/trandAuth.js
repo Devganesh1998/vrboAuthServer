@@ -91,7 +91,7 @@ router.post(
       })
       .then((result) => {
         if (result.length > 0) {
-          res.status(400).json({
+          res.status(200).json({
             errorMsg: "User Already Exists with given mail",
             isRegisterSuccess: false,
           });
@@ -145,9 +145,10 @@ router.post(
     body("password").exists().bail().trim(),
   ],
   (req, res) => {
+    console.log(req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(200).json({
         errors: errors.array(),
         errormsg: "Please send required Details",
         "Required fields": ["email", "password"],
@@ -155,6 +156,7 @@ router.post(
           email: "TestEmail@mail.com",
           password: "pass",
         },
+        // yourReq: res.body
       });
     }
 
@@ -172,7 +174,7 @@ router.post(
       })
       .then((result) => {
         if (result.length === 0) {
-          res.status(400).json({
+          res.status(200).json({
             errorMsg: "User doesn't Exists with given mail",
             isLoginSuccess: false,
           });
@@ -189,7 +191,7 @@ router.post(
           };
           return submitedUser;
         } else {
-          res.status(400).json({
+          res.status(200).json({
             errorMsg: "Incorrect Password",
             isLoginSuccess: false,
           });
