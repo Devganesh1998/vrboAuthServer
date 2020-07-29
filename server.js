@@ -16,6 +16,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const apiRoutes = require("./Routes");
+
+app.get('/info', (req, res) => {
+  res.send("Welcome to AuthServer of vrbo");
+});
+
 app.use("/", apiRoutes);
 
 db.sequelize.sync().then(() => {
