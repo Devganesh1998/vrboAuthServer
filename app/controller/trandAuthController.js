@@ -1,7 +1,10 @@
-const { body, validationResult } = require("express-validator");
+const bcrypt = require("bcrypt");
+const { validationResult } = require("express-validator");
 
 let jwt = require("jsonwebtoken");
 const User = require("../model/UserModel");
+
+const redis = require("../../redisInstance");
 
 exports.checkMailStatus = (req, res) => {
   const errors = validationResult(req);
@@ -74,7 +77,10 @@ exports.register = (req, res) => {
         throw new Error("User Exists handled");
       }
     })
-    .then(() => User.createUser(firstName + " " + lastName, email, password))
+    .then(() => bcrypt.hash(password, 10))
+    .then((hashedPassword) =>
+      User.createUser(firstName + " " + lastName, email, hashedPassword)
+    )
     .then((submitedUser) => {
       resData = {
         user: { email: submitedUser.email, name: submitedUser.name },
@@ -86,14 +92,29 @@ exports.register = (req, res) => {
       const payload = {
         email: email,
       };
+      const expirationSeconds = 60 * 60 * 3;
       const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
-        expiresIn: 60 * 60 * 3,
+        expiresIn: expirationSeconds,
       });
-      res.cookie("auth_token", auth_token, {
-        maxAge: 60 * 60 * 3,
-        httpOnly: true,
+      res.cookie(
+        "emailAuth_tokenPair",
+        { email: email, auth_token: auth_token },
+        {
+          maxAge: expirationSeconds,
+          httpOnly: true,
+        }
+      );
+      redis.client.setex(email, expirationSeconds, auth_token, (err, reply) => {
+        if (err) {
+          console.log(err);
+          res.status(200).json({
+            errorMsg: "Session not being maintained, Please Login again",
+            isRegisterSuccess: true,
+          });
+        } else {
+          res.send(resData);
+        }
       });
-      res.send(resData);
     })
     .catch((err) => {
       console.log(err);
@@ -135,9 +156,12 @@ exports.login = (req, res) => {
       }
       return result;
     })
-    .then((submitedUser) => {
-      console.log(submitedUser[0], password)
-      if (submitedUser[0].password === password) {
+    .then(async (submitedUser) => {
+      let hashCompareResult = await bcrypt.compare(
+        password,
+        submitedUser[0].password
+      );
+      if (hashCompareResult) {
         resData = {
           user: { email: submitedUser[0].email, name: submitedUser[0].name },
           isLoginSuccess: true,
@@ -156,14 +180,29 @@ exports.login = (req, res) => {
       const payload = {
         email: submitedUser[0].email,
       };
+      const expirationSeconds = 60 * 60 * 3;
       const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
-        expiresIn: 60 * 60 * 3,
+        expiresIn: expirationSeconds,
       });
-      res.cookie("auth_token", auth_token, {
-        maxAge: 60 * 60 * 3,
-        httpOnly: true,
+      res.cookie(
+        "emailAuth_tokenPair",
+        { email: email, auth_token: auth_token },
+        {
+          maxAge: expirationSeconds,
+          httpOnly: true,
+        }
+      );
+      redis.client.setex(email, expirationSeconds, auth_token, (err, reply) => {
+        if (err) {
+          console.log(err);
+          res.status(200).json({
+            errorMsg: "Session not being maintained, Please Login again",
+            isLoginSuccess: true,
+          });
+        } else {
+          res.send(resData);
+        }
       });
-      res.send(resData);
     })
     .catch((err) => {
       console.log(err);
@@ -175,4 +214,74 @@ exports.login = (req, res) => {
         res.send();
       }
     });
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(200).json({
+        errors: errors.array(),
+        errormsg: "Please send required Details",
+        "Required fields": ["email"],
+        "sample Format": {
+          email: "TestEmail@mail.com",
+        },
+      });
+    }
+
+    const email = req.body.email;
+
+    const temp = await redis.delWithPromise(email);
+    res.send({
+      user: {
+        email: email,
+      },
+      isLogoutSuccess: true,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ "Internal Server Error": err });
+    res.send();
+  }
+};
+
+exports.verifyAuth = (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(200).json({
+      errors: errors.array(),
+      errormsg: "Please send required Details",
+      "Required fields": ["email"],
+      "sample Format": {
+        email: "TestEmail@mail.com",
+      },
+    });
+  }
+
+  const email = req.body.email;
+
+  redis.client.get(email, (err, result) => {
+    if (err) {
+      console.log(err);
+      res.status(500).json({ "Internal Server Error": err });
+      res.send();
+    } else {
+      if (result !== null) {
+        res.send({
+          user: {
+            email: email,
+          },
+          isAuthenticated: true,
+        });
+      } else {
+        res.send({
+          user: {
+            email: email,
+          },
+          isAuthenticated: false,
+        });
+      }
+    }
+  });
 };

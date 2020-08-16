@@ -1,5 +1,0 @@
-CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER NOT NULL auto_increment , `name` VARCHAR(255) NOT NULL, `email` VARCHAR(255) NOT NULL, `password` VARCHAR(255), `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;
-Executing (default): SHOW INDEX FROM `users` FROM `vrbo`
-Executing (default): CREATE TABLE IF NOT EXISTS `oauth_infos` (`id` INTEGER NOT NULL auto_increment , `provider` VARCHAR(255) NOT NULL, `providerId` VARCHAR(255) NOT NULL, `accessToken` VARCHAR(255) NOT NULL, `expires_at` VARCHAR(255) NOT NULL, `expires_in` VARCHAR(255) NOT NULL, `first_issued_at` VARCHAR(255) NOT NULL, `refreshToken` VARCHAR(255), `imageUrl` VARCHAR(255) NOT NULL, `data` VARCHAR(255), `userId` INTEGER NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL, PRIMARY KEY (`id`), FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE) 
-ENGINE=InnoDB;
-Executing (default): SHOW INDEX FROM `oauth_infos` FROM `vrbo`

@@ -4,6 +4,8 @@ const { validationResult } = require("express-validator");
 const User = require("../model/UserModel");
 const OauthInfo = require("../model/OauthInfosModel");
 
+const redis = require("../../redisInstance");
+
 exports.fbOauth = (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
@@ -74,12 +76,26 @@ exports.fbOauth = (req, res) => {
             const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
               expiresIn: expires_in - 10,
             });
-            res.cookie("auth_token", auth_token, {
-              maxAge: expires_in - 10,
-              httpOnly: true,
+            res.cookie(
+              "emailAuth_tokenPair",
+              { email: email, auth_token: auth_token },
+              {
+                maxAge: expires_in - 10,
+                httpOnly: true,
+              }
+            );
+            redis.client.setex(email, expires_in - 10, auth_token, (err, reply) => {
+              if (err) {
+                console.log(err);
+                res.status(200).json({
+                  errorMsg: "Session not being maintained, Please Login again",
+                  isAuthenticated: true,
+                });
+              } else {
+                resData.isAuthenticated = true;
+                res.send(resData);
+              }
             });
-            resData.isAuthenticated = true;
-            res.send(resData);
           })
           .catch((err) => {
             console.log(err);
@@ -111,12 +127,26 @@ exports.fbOauth = (req, res) => {
             const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
               expiresIn: expires_in - 10,
             });
-            res.cookie("auth_token", auth_token, {
-              maxAge: expires_in - 10,
-              httpOnly: true,
+            res.cookie(
+              "emailAuth_tokenPair",
+              { email: email, auth_token: auth_token },
+              {
+                maxAge: expires_in - 10,
+                httpOnly: true,
+              }
+            );
+            redis.client.setex(email, expires_in - 10, auth_token, (err, reply) => {
+              if (err) {
+                console.log(err);
+                res.status(200).json({
+                  errorMsg: "Session not being maintained, Please Login again",
+                  isAuthenticated: true,
+                });
+              } else {
+                resData.isAuthenticated = true;
+                res.send(resData);
+              }
             });
-            resData.isAuthenticated = true;
-            res.send(resData);
           })
           .catch((err) => {
             console.log(err);

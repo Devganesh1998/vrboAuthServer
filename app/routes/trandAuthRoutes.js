@@ -10,6 +10,12 @@ router.post(
 );
 
 router.post(
+  "/verifyAuth",
+  [body("email").exists().bail().isEmail().bail().trim()],
+  trandAuth.verifyAuth
+);
+
+router.post(
   "/register",
   [
     body("lastName").exists().bail().trim(),
@@ -27,6 +33,14 @@ router.post(
     body("password").exists().bail().trim(),
   ],
   trandAuth.login
+);
+
+router.post(
+  "/logout",
+  [
+    body("email").exists().bail().isEmail().trim(),
+  ],
+  trandAuth.logout
 );
 
 module.exports = router;
