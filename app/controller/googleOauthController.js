@@ -76,11 +76,12 @@ exports.googleOauth = (req, res) => {
             const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
               expiresIn: expires_in - 10,
             });
+            const expirationMilliSeconds = (expires_in - 10) * 1000;
             res.cookie(
               "emailAuth_tokenPair",
               { email: email, auth_token: auth_token },
               {
-                maxAge: expires_in - 10,
+                maxAge: expirationMilliSeconds,
                 httpOnly: true,
                 secure: true,
                 domain: 'devganesh.tech'
@@ -129,11 +130,12 @@ exports.googleOauth = (req, res) => {
             const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
               expiresIn: expires_in - 10,
             });
+            const expirationMilliSeconds = (expires_in - 10) * 1000;
             res.cookie(
               "emailAuth_tokenPair",
               { email: email, auth_token: auth_token },
               {
-                maxAge: expires_in - 10,
+                maxAge: expirationMilliSeconds,
                 httpOnly: true,
                 secure: true,
                 domain: 'devganesh.tech'

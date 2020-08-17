@@ -100,7 +100,7 @@ exports.register = (req, res) => {
         "emailAuth_tokenPair",
         { email: email, auth_token: auth_token },
         {
-          maxAge: expirationSeconds,
+          maxAge: expirationSeconds * 1000,
           httpOnly: true,
           secure: true,
           domain: 'devganesh.tech'
@@ -190,7 +190,7 @@ exports.login = (req, res) => {
         "emailAuth_tokenPair",
         { email: email, auth_token: auth_token },
         {
-          maxAge: expirationSeconds,
+          maxAge: expirationSeconds * 1000,
           httpOnly: true,
           secure: true,
           domain: 'devganesh.tech'
