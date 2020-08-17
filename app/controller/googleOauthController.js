@@ -56,7 +56,7 @@ exports.googleOauth = (req, res) => {
           })
           .then((submitedUser) =>
             OauthInfo.createRow(
-              "Google",
+              "google",
               googleId,
               accessToken,
               imageUrl,
@@ -70,6 +70,8 @@ exports.googleOauth = (req, res) => {
             resData.userOauth = submitOauthDetails;
             const payload = {
               email: email,
+              name: name,
+              provider: "google",
               googleToken: accessToken,
               expires_at: expires_at,
             };
@@ -78,8 +80,7 @@ exports.googleOauth = (req, res) => {
             });
             const expirationMilliSeconds = (expires_in - 10) * 1000;
             res.cookie(
-              "emailAuth_tokenPair",
-              { email: email, auth_token: auth_token },
+              "auth_token", auth_token,
               {
                 maxAge: expirationMilliSeconds,
                 httpOnly: true,
@@ -124,6 +125,8 @@ exports.googleOauth = (req, res) => {
             };
             const payload = {
               email: email,
+              name: name,
+              provider: "google",
               googleToken: accessToken,
               expires_at: expires_at,
             };
@@ -132,8 +135,7 @@ exports.googleOauth = (req, res) => {
             });
             const expirationMilliSeconds = (expires_in - 10) * 1000;
             res.cookie(
-              "emailAuth_tokenPair",
-              { email: email, auth_token: auth_token },
+              "auth_token", auth_token,
               {
                 maxAge: expirationMilliSeconds,
                 httpOnly: true,

@@ -91,14 +91,14 @@ exports.register = (req, res) => {
     .then((submitedUser) => {
       const payload = {
         email: email,
-      };
+        name: firstName + " " + lastName
+      }; 
       const expirationSeconds = 60 * 60 * 3;
       const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
         expiresIn: expirationSeconds,
       });
       res.cookie(
-        "emailAuth_tokenPair",
-        { email: email, auth_token: auth_token },
+        "auth_token", auth_token,
         {
           maxAge: expirationSeconds * 1000,
           httpOnly: true,
@@ -181,14 +181,14 @@ exports.login = (req, res) => {
     .then((submitedUser) => {
       const payload = {
         email: submitedUser[0].email,
+        name: submitedUser[0].name
       };
       const expirationSeconds = 60 * 60 * 3;
       const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
         expiresIn: expirationSeconds,
       });
       res.cookie(
-        "emailAuth_tokenPair",
-        { email: email, auth_token: auth_token },
+        "auth_token", auth_token,
         {
           maxAge: expirationSeconds * 1000,
           httpOnly: true,
@@ -222,17 +222,18 @@ exports.login = (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    const emailAuth_tokenPair = req.cookies.emailAuth_tokenPair;
+    const auth_token = req.cookies.auth_token;
 
-    if (emailAuth_tokenPair === null || emailAuth_tokenPair === undefined) {
+    if (auth_token === null || auth_token === undefined) {
       res.send({
         msg: "Session already Expired",
         isLogoutSuccess: true,
       });
     } else {
-      const { email, auth_token } = emailAuth_tokenPair;
+      const parsedToken = jwt.decode(auth_token);
+      const {email} = parsedToken;
 
-      res.clearCookie("emailAuth_tokenPair");
+      res.clearCookie("auth_token");
 
       const temp = await redis.delWithPromise(email);
       res.send({
@@ -250,15 +251,16 @@ exports.logout = async (req, res) => {
 };
 
 exports.verifyAuth = (req, res) => {
-  const emailAuth_tokenPair = req.cookies.emailAuth_tokenPair;
+  const auth_token = req.cookies.auth_token;
 
-  if (emailAuth_tokenPair === null || emailAuth_tokenPair === undefined) {
+  if (auth_token === null || auth_token === undefined) {
     res.send({
       msg: "Session Expired Login Again",
       isAuthenticated: false,
     });
   } else {
-    const { email, auth_token } = emailAuth_tokenPair;
+    const parsedToken = jwt.decode(auth_token);
+    const { email } = parsedToken;
 
     redis.client.get(email, (err, result) => {
       if (err) {
