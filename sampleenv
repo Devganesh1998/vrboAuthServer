@@ -1,0 +1,10 @@
+TOKEN_SECRET=
+
+PORT=8000
+
+NODE_ENV=development
+
+DEV_HOST=
+DEV_PASSWORD=
+
+ALLOWED_ORIGIN=https://vrboclone.devganesh.tech

@@ -4,7 +4,6 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const db = require("./models");
-const cors = require("cors");
 const passport = require("passport");
 const redis = require("./redisInstance");
 
@@ -15,12 +14,19 @@ redis.client.on("error", function (error) {
 });
 
 const app = express();
-app.use(cors());
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(passport.initialize());
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN);
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Set-Cookie");
+  res.header('Access-Control-Allow-Credentials', true);
+  res.header("Access-Control-Expose-Headers", "Set-Cookie");
+  next();
+});
 
 const apiRoutes = require("./app/routes");
 

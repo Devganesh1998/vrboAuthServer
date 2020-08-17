@@ -34,11 +34,8 @@ router.post(
   trandAuth.login
 );
 
-router.post(
+router.get(
   "/logout",
-  [
-    body("email").exists().bail().isEmail().trim(),
-  ],
   trandAuth.logout
 );
 

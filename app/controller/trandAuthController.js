@@ -103,7 +103,7 @@ exports.register = (req, res) => {
           maxAge: expirationSeconds * 1000,
           httpOnly: true,
           secure: true,
-          domain: 'devganesh.tech'
+          domain: "devganesh.tech",
         }
       );
       redis.client.setex(email, expirationSeconds, auth_token, (err, reply) => {
@@ -193,7 +193,7 @@ exports.login = (req, res) => {
           maxAge: expirationSeconds * 1000,
           httpOnly: true,
           secure: true,
-          domain: 'devganesh.tech'
+          domain: "devganesh.tech",
         }
       );
       redis.client.setex(email, expirationSeconds, auth_token, (err, reply) => {
@@ -222,27 +222,26 @@ exports.login = (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(200).json({
-        errors: errors.array(),
-        errormsg: "Please send required Details",
-        "Required fields": ["email"],
-        "sample Format": {
-          email: "TestEmail@mail.com",
+    const emailAuth_tokenPair = req.cookies.emailAuth_tokenPair;
+
+    if (emailAuth_tokenPair === null || emailAuth_tokenPair === undefined) {
+      res.send({
+        msg: "Session already Expired",
+        isLogoutSuccess: true,
+      });
+    } else {
+      const { email, auth_token } = emailAuth_tokenPair;
+
+      res.clearCookie("emailAuth_tokenPair");
+
+      const temp = await redis.delWithPromise(email);
+      res.send({
+        user: {
+          email: email,
         },
+        isLogoutSuccess: true,
       });
     }
-
-    const email = req.body.email;
-
-    const temp = await redis.delWithPromise(email);
-    res.send({
-      user: {
-        email: email,
-      },
-      isLogoutSuccess: true,
-    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ "Internal Server Error": err });
