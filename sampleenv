@@ -8,3 +8,6 @@ DEV_HOST=
 DEV_PASSWORD=
 
 ALLOWED_ORIGIN=https://vrboclone.devganesh.tech
+
+
+PRIVATE_ORIGIN=http://localhost:4500

@@ -88,35 +88,46 @@ exports.register = (req, res) => {
       };
       return submitedUser;
     })
-    .then((submitedUser) => {
+    .then(async (submitedUser) => {
+      const randomHash = await bcrypt.hash(
+        email +
+          new Date().valueOf().toString() +
+          Math.random().toFixed(5).toString(),
+        1
+      );
       const payload = {
         email: email,
-        name: firstName + " " + lastName
-      }; 
+        name: firstName + " " + lastName,
+        hash: randomHash,
+      };
       const expirationSeconds = 60 * 60 * 3;
       const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
         expiresIn: expirationSeconds,
       });
-      res.cookie(
-        "auth_token", auth_token,
-        {
-          maxAge: expirationSeconds * 1000,
-          httpOnly: true,
-          secure: true,
-          domain: "devganesh.tech",
+      res.cookie("vrbocloneSessionId", randomHash, {
+        maxAge: expirationSeconds * 1000,
+        httpOnly: true,
+        secure: true,
+        domain: "devganesh.tech",
+        sameSite: true
+      });
+      redis.client.setex(
+        randomHash,
+        expirationSeconds,
+        auth_token,
+        (err, reply) => {
+          if (err) {
+            console.log(err);
+            res.status(200).json({
+              errorMsg: "Session not being maintained, Please Login again",
+              isRegisterSuccess: true,
+              user: resData.user,
+            });
+          } else {
+            res.send(resData);
+          }
         }
       );
-      redis.client.setex(email, expirationSeconds, auth_token, (err, reply) => {
-        if (err) {
-          console.log(err);
-          res.status(200).json({
-            errorMsg: "Session not being maintained, Please Login again",
-            isRegisterSuccess: true,
-          });
-        } else {
-          res.send(resData);
-        }
-      });
     })
     .catch((err) => {
       console.log(err);
@@ -178,35 +189,46 @@ exports.login = (req, res) => {
         throw new Error("Incorrect Password handled");
       }
     })
-    .then((submitedUser) => {
+    .then(async (submitedUser) => {
+      const randomHash = await bcrypt.hash(
+        email +
+          new Date().valueOf().toString() +
+          Math.random().toFixed(5).toString(),
+        1
+      );
       const payload = {
         email: submitedUser[0].email,
-        name: submitedUser[0].name
+        name: submitedUser[0].name,
+        hash: randomHash,
       };
       const expirationSeconds = 60 * 60 * 3;
       const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
         expiresIn: expirationSeconds,
       });
-      res.cookie(
-        "auth_token", auth_token,
-        {
-          maxAge: expirationSeconds * 1000,
-          httpOnly: true,
-          secure: true,
-          domain: "devganesh.tech",
+      res.cookie("vrbocloneSessionId", randomHash, {
+        maxAge: expirationSeconds * 1000,
+        httpOnly: true,
+        secure: true,
+        domain: "devganesh.tech",
+        sameSite: true
+      });
+      redis.client.setex(
+        randomHash,
+        expirationSeconds,
+        auth_token,
+        (err, reply) => {
+          if (err) {
+            console.log(err);
+            res.status(200).json({
+              errorMsg: "Session not being maintained, Please Login again",
+              isLoginSuccess: true,
+              user: resData.user,
+            });
+          } else {
+            res.send(resData);
+          }
         }
       );
-      redis.client.setex(email, expirationSeconds, auth_token, (err, reply) => {
-        if (err) {
-          console.log(err);
-          res.status(200).json({
-            errorMsg: "Session not being maintained, Please Login again",
-            isLoginSuccess: true,
-          });
-        } else {
-          res.send(resData);
-        }
-      });
     })
     .catch((err) => {
       console.log(err);
@@ -222,24 +244,18 @@ exports.login = (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    const auth_token = req.cookies.auth_token;
+    const vrbocloneSessionId = req.cookies.vrbocloneSessionId;
 
-    if (auth_token === null || auth_token === undefined) {
+    if (vrbocloneSessionId === null || vrbocloneSessionId === undefined) {
       res.send({
         msg: "Session already Expired",
         isLogoutSuccess: true,
       });
     } else {
-      const parsedToken = jwt.decode(auth_token);
-      const {email} = parsedToken;
+      res.clearCookie("vrbocloneSessionId");
 
-      res.clearCookie("auth_token");
-
-      const temp = await redis.delWithPromise(email);
+      const temp = await redis.delWithPromise(vrbocloneSessionId);
       res.send({
-        user: {
-          email: email,
-        },
         isLogoutSuccess: true,
       });
     }
@@ -250,40 +266,84 @@ exports.logout = async (req, res) => {
   }
 };
 
-exports.verifyAuth = (req, res) => {
-  const auth_token = req.cookies.auth_token;
+exports.verifyAuthWithCookie = (req, res) => {
+  const vrbocloneSessionId = req.cookies.vrbocloneSessionId;
 
-  if (auth_token === null || auth_token === undefined) {
+  if (vrbocloneSessionId === null || vrbocloneSessionId === undefined) {
     res.send({
       msg: "Session Expired Login Again",
       isAuthenticated: false,
     });
   } else {
-    const parsedToken = jwt.decode(auth_token);
-    const { email } = parsedToken;
-
-    redis.client.get(email, (err, result) => {
+    redis.client.get(vrbocloneSessionId, (err, result) => {
       if (err) {
         console.log(err);
         res.status(500).json({ "Internal Server Error": err });
         res.send();
       } else {
-        if (result === auth_token) {
+        const parsedJwt = jwt.decode(result);
+        const { name, email, hash } = parsedJwt;
+        if (vrbocloneSessionId === hash) {
           res.send({
             user: {
               email: email,
+              name: name,
             },
             isAuthenticated: true,
           });
         } else {
           res.send({
-            user: {
-              email: email,
-            },
             isAuthenticated: false,
           });
         }
       }
     });
   }
+};
+
+exports.verifyAuth = (req, res) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array(),
+      errormsg: "Please send required Details",
+      "Required fields": ["vrbocloneSessionId"],
+      "sample Format": {
+        vrbocloneSessionId: "87fuefhiejh37hc83nc38hcwyvgrnhiq",
+      },
+    });
+  }
+
+  const vrbocloneSessionId = req.body.vrbocloneSessionId;
+
+  redis.client.get(vrbocloneSessionId, (err, result) => {
+    if (err) {
+      console.log(err);
+      res.status(500).json({ "Internal Server Error": err });
+      res.send();
+    } else {
+      const parsedJwt = jwt.decode(result);
+      if (parsedJwt === null || parsedJwt === undefined) {
+        res.send({
+          isAuthenticated: false,
+        });
+      } else {
+        const { name, email, hash } = parsedJwt;
+        if (hash === vrbocloneSessionId) {
+          res.send({
+            user: {
+              email: email,
+              name: name,
+            },
+            isAuthenticated: true,
+          });
+        } else {
+          res.send({
+            isAuthenticated: false,
+          });
+        }
+      }
+    }
+  });
 };

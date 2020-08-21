@@ -1,5 +1,6 @@
 let jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
+const bcrypt = require("bcrypt");
 
 const User = require("../model/UserModel");
 const OauthInfo = require("../model/OauthInfosModel");
@@ -66,34 +67,43 @@ exports.googleOauth = (req, res) => {
               submitedUser.id
             )
           )
-          .then((submitOauthDetails) => {
+          .then(async (submitOauthDetails) => {
             resData.userOauth = submitOauthDetails;
+            const randomHash = await bcrypt.hash(
+              email +
+                new Date().valueOf().toString() +
+                Math.random().toFixed(5).toString(),
+              1
+            );
             const payload = {
               email: email,
               name: name,
               provider: "google",
               googleToken: accessToken,
               expires_at: expires_at,
+              hash: randomHash
             };
             const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
               expiresIn: expires_in - 10,
             });
             const expirationMilliSeconds = (expires_in - 10) * 1000;
             res.cookie(
-              "auth_token", auth_token,
+              "vrbocloneSessionId", randomHash,
               {
                 maxAge: expirationMilliSeconds,
                 httpOnly: true,
                 secure: true,
-                domain: 'devganesh.tech'
+                domain: 'devganesh.tech',
+                sameSite: true
               }
             );
-            redis.client.setex(email, expires_in - 10, auth_token, (err, reply) => {
+            redis.client.setex(randomHash, expires_in - 10, auth_token, (err, reply) => {
               if (err) {
                 console.log(err);
                 res.status(200).json({
                   errorMsg: "Session not being maintained, Please Login again",
                   isAuthenticated: true,
+                  userOauth: resData.userOauth
                 });
               } else {
                 resData.isAuthenticated = true;
@@ -117,38 +127,47 @@ exports.googleOauth = (req, res) => {
           expires_in,
           first_issued_at
         )
-          .then((submitedUser) => {
+          .then(async (submitedUser) => {
             resData.updateDetails = submitedUser;
             resData.user = {
               name: name,
               email: email,
             };
+            const randomHash = await bcrypt.hash(
+              email +
+                new Date().valueOf().toString() +
+                Math.random().toFixed(5).toString(),
+              1
+            );
             const payload = {
               email: email,
               name: name,
               provider: "google",
               googleToken: accessToken,
               expires_at: expires_at,
+              hash: randomHash
             };
             const auth_token = jwt.sign(payload, process.env.TOKEN_SECRET, {
               expiresIn: expires_in - 10,
             });
             const expirationMilliSeconds = (expires_in - 10) * 1000;
             res.cookie(
-              "auth_token", auth_token,
+              "vrbocloneSessionId", randomHash,
               {
                 maxAge: expirationMilliSeconds,
                 httpOnly: true,
                 secure: true,
-                domain: 'devganesh.tech'
+                domain: 'devganesh.tech',
+                sameSite: true
               }
             );
-            redis.client.setex(email, expires_in - 10, auth_token, (err, reply) => {
+            redis.client.setex(randomHash, expires_in - 10, auth_token, (err, reply) => {
               if (err) {
                 console.log(err);
                 res.status(200).json({
                   errorMsg: "Session not being maintained, Please Login again",
                   isAuthenticated: true,
+                  user: resData.user
                 });
               } else {
                 resData.isAuthenticated = true;

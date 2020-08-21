@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const { body, validationResult } = require("express-validator");
+const privatizeEndpoint = require("../customMiddlewares/privatizeEndpoint");
 
 const trandAuth = require("../controller/trandAuthController");
 
@@ -11,6 +12,13 @@ router.post(
 
 router.get(
   "/verifyAuth",
+  trandAuth.verifyAuthWithCookie
+);
+
+router.post(
+  "/verifyAuth",
+  privatizeEndpoint(["https://vrboserver.devganesh.tech", ["http://localhost:3000"]]),
+  [body("vrbocloneSessionId").exists().bail().trim()],
   trandAuth.verifyAuth
 );
 
