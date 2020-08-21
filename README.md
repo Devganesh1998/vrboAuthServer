@@ -208,7 +208,7 @@ POST `/login`
     "user": {
       "email": "TestEmail@mail.com",
       "name": "Ftest Ltest"
-    }
+    },
     "isLoginSuccess": true
   }
   ```
@@ -289,8 +289,8 @@ Cookie will be send automatically.
   ```json
   {
     "user": {
-      "email": email,
-      "name": name
+      "email": "testMaill@mail.com",
+      "name": "Ftest Ltest"
     },
     "isAuthenticated": true
   }
@@ -552,8 +552,8 @@ POST `/verifyAuth`
   ```json
   {
     "user": {
-      "email": email,
-      "name": name
+      "email": "testMail@mail.com",
+      "name": "Ftest Ltest"
     },
     "isAuthenticated": true
   }
