@@ -109,7 +109,7 @@ exports.register = (req, res) => {
         httpOnly: true,
         secure: true,
         domain: "devganesh.tech",
-        sameSite: true
+        sameSite: true,
       });
       redis.client.setex(
         randomHash,
@@ -210,7 +210,7 @@ exports.login = (req, res) => {
         httpOnly: true,
         secure: true,
         domain: "devganesh.tech",
-        sameSite: true
+        sameSite: true,
       });
       redis.client.setex(
         randomHash,
@@ -252,7 +252,13 @@ exports.logout = async (req, res) => {
         isLogoutSuccess: true,
       });
     } else {
-      res.clearCookie("vrbocloneSessionId");
+      res.cookie("vrbocloneSessionId", "", {
+        maxAge: 0,
+        httpOnly: true,
+        secure: true,
+        domain: "devganesh.tech",
+        sameSite: true,
+      });
 
       const temp = await redis.delWithPromise(vrbocloneSessionId);
       res.send({
@@ -282,19 +288,25 @@ exports.verifyAuthWithCookie = (req, res) => {
         res.send();
       } else {
         const parsedJwt = jwt.decode(result);
-        const { name, email, hash } = parsedJwt;
-        if (vrbocloneSessionId === hash) {
-          res.send({
-            user: {
-              email: email,
-              name: name,
-            },
-            isAuthenticated: true,
-          });
-        } else {
+        if (parsedJwt === null || parsedJwt === undefined) {
           res.send({
             isAuthenticated: false,
           });
+        } else {
+          const { name, email, hash } = parsedJwt;
+          if (vrbocloneSessionId === hash) {
+            res.send({
+              user: {
+                email: email,
+                name: name,
+              },
+              isAuthenticated: true,
+            });
+          } else {
+            res.send({
+              isAuthenticated: false,
+            });
+          }
         }
       }
     });

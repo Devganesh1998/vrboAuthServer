@@ -103,6 +103,7 @@ exports.googleOauth = (req, res) => {
                 res.status(200).json({
                   errorMsg: "Session not being maintained, Please Login again",
                   isAuthenticated: true,
+                  user: resData.user,
                   userOauth: resData.userOauth
                 });
               } else {
