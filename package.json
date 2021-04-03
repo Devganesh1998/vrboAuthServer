@@ -8,7 +8,11 @@
     "dev": "nodemon server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": {
+    "name": "Dev Ganesh",
+    "email": "devganesh91@gmail.com",
+    "url": "https://github.com/devganesh1998"
+  },
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.0.0",
